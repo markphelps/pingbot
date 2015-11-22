@@ -1,0 +1,15 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  name: test
+  email: test@example.com
+  title: Director of Test
+  phone: 555-555-5555
+  organization: one
+
+two:
+  name: test
+  email: test2@example.com
+  title: VP of Test
+  phone: 555-555-5555
+  organization: two

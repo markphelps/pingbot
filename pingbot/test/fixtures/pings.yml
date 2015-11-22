@@ -1,0 +1,13 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  name: ping-one
+  uri: abcd
+  description: I am a description
+  organization: one
+
+two:
+  name: ping-two
+  uri: efgh
+  description: I am a description
+  organization: two
