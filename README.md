@@ -1,14 +1,14 @@
-# Pingbot
+# Pingbot-Notifier
 
-Pingbot is a simple service notification microservice written in Ruby, using the [rails-api](https://github.com/rails-api/rails-api) framework.
+Pingbot/Notifier are a collection of two simple service notification microservices written in Ruby (pingbot using the [rails-api](https://github.com/rails-api/rails-api) framework and notifier using [Sinatra](http://www.sinatrarb.com/)).
 
-It works by constantly receiving pings from your service and sends you a notification if it doesn't receive a 'checkin' ping from your service after a specified amount of time.
+Pingbot works by constantly receiving pings from your service and sends you a notification if it doesn't receive a 'checkin' ping from your service after a specified amount of time.
 
 This can be used to alert you over service interruptions or downtime.
 
 Pingbot is entirely API driven, meaning there is no user interface.
 
-[ ![Codeship Status for markphelps/pingbot](https://codeship.com/projects/f466c620-5746-0133-c0f5-1aec7b31e9a0/status?branch=master)](https://codeship.com/projects/109506)
+Notifier is also API driven and exposes a single REST endpoint to send messages via [Slack](https://slack.com/), as well as a [Kafka](http://kafka.apache.org/) consumer also written in Ruby which receives messages from Pingbot via Kakfa.
 
 ## How it Works
 
@@ -20,33 +20,34 @@ The current timeout is set to 1 minute plus a few seconds to allow for network l
 
 Simply register your application, create a ping, and start 'pinging' your custom endpoint every minute from your service.
 
+### Rake
+
 **Note:** Pingbot is simply a proof of concept and not to be used in production environments. The notification piece is still under development. Currently the way this works is by running a Rake task every minute (via cron) to report on expired pings.
+
+`pingbot $ rake pings:unhealthy`
+
+### Kafka
+
+Once a ping is marked as unhealthy via the above Rake task, Pingbot publishes a message to a [Kafka](http://kafka.apache.org/) cluster (single node) to indicate that a notification should be sent.
+
+Notifier runs a consumer as a seperate Ruby process that consumes messages from the Kafka topic that is published to by Pingbot. Once Notifier receives a message, it fires off a Slack message to the configured SLACK_WEBHOOK_URL and SLACK_CHANNEL in the notifier [.env](notifier/.env) file.
 
 ## Setup
 
-### Locally
-1. Clone the repo `git clone git@github.com:markphelps/pingbot.git`
-1. Make sure you are running ruby-2.2.3 and have redis installed
-1. `bundle install`
-1. `bundle exec rake db:create`
-1. `bundle exec rake db:migrate`
-1. `bundle exec rake db:seed`
-1. `bundle exec foreman start`
-
-### Via Docker
-1. Clone the repo `git clone git@github.com:markphelps/pingbot.git`
+### Docker
+1. Clone the repo `git clone git@github.com:markphelps/pingbot-notifier.git`
 1. Install [Docker](https://docs.docker.com/installation/mac/) and [docker-compose](https://docs.docker.com/compose/)
 1. Start docker and then `docker-compose up`
 1. Go grab a coffee as this will take awhile the first time...
-1. docker-compose will download and setup the dependencies (ruby, redis, etc)
-1. Docker will then run `bundle install` to install our gems as well as start the Rails server
-1. In a separate terminal run: `$(boot2docker shellinit)`
+1. docker-compose will download and setup the dependencies (ruby, redis, kafka, etc)
+1. Docker will then run `bundle install` to install our gems as well as start the Rails server for Pingbot, the Kafka and Zookeeper clusters as well as the Sinatra app and consumer for Notifier.
+1. In a separate terminal run: `eval "$(docker-machine env dev)"` where dev is your VM name
 1. Then run the following commands in this new terminal:
 
 	```bash
-	docker-compose run web bundle exec rake db:create
-	docker-compose run web bundle exec rake db:migrate
-	docker-compose run web bundle exec rake db:seed
+	docker-compose run pingbot rake db:create
+	docker-compose run pingbot rake db:migrate
+	docker-compose run pingbot rake db:seed
 	```
 
 This will create the required Organization and User as well as an initial Ping:
@@ -59,8 +60,13 @@ Ping: #<Ping id: 1, uri: "mn3l", name: "First Ping", description: "This is our f
 
 Take note of your Org Token (ex: "cQyerxPsrQfwJW3his9rVwtt") as you will need it to interact with the API
 
-## Running Tests
+### Environment Variables
 
+Update both .env files in [notifier](notifier/.env) and [pingbot](pingbot/.env) and make sure your SLACK_* and KAFKA_* Env vars are set correctly.
+
+## Running Tests (Locally)
+
+1. `cd pingbot` (Only pingbot has tests at the moment)
 1. `bundle install`
 1. `bundle exec rake db:test:prepare`
 1. `bundle exec rake test`
@@ -176,7 +182,8 @@ Response:
 ## Dependencies
 * Ruby 2.2.3
 * Redis
-* SQLite (soon to be replaced with PostgreSQL probably)
+* Kafka
+* Zookeeper
 
 ## Contributing
 1. Fork it
