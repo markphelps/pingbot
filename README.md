@@ -20,7 +20,9 @@ The current timeout is set to 1 minute plus a few seconds to allow for network l
 
 Simply register your application, create a ping, and start 'pinging' your custom endpoint every minute from your service.
 
-For a quick overview of the system check out the [architecture diagram](pingbot.svg).
+Here's a quick overview of the system as a whole:
+
+![Pingbot Architecture](pingbot.png)
 
 ### Rake
 
